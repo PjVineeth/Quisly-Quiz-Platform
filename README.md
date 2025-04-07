@@ -1,4 +1,4 @@
-# Quisly - Quisly
+# Quisly - Quiz Platform
 
 Quisly is a modern, interactive Quisly built with Next.js, MongoDB, and Clerk authentication. It provides a seamless experience for creating, managing, and taking quizzes.
 
