@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - Quisly</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="main-header">
+            <div class="container header-container">
+                <div class="header-left">
+                    <button class="menu-toggle" id="menu-toggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1 class="logo">Quisly</h1>
+                </div>
+                <nav class="main-nav">
+                    <ul class="nav-list">
+                        <li class="nav-item active"><a href="/student/dashboard.html">Dashboard</a></li>
+                        <li class="nav-item"><a href="/student/join.html">Join Quiz</a></li>
+                        <li class="nav-item"><a href="/student/results.html">My Results</a></li>
+                        <li class="nav-item"><a href="/student/profile.html">Profile</a></li>
+                    </ul>
+                </nav>
+                <div class="header-actions">
+                    <div class="dropdown">
+                        <button class="btn btn-icon notification-btn">
+                            <i class="fas fa-bell"></i>
+                            <span class="notification-badge">2</span>
+                        </button>
+                        <div class="dropdown-menu">
+                            <div class="dropdown-header">Notifications</div>
+                            <div class="dropdown-divider"></div>
+                            <a href="#" class="dropdown-item">New quiz available: Science Chapter 6</a>
+                            <a href="#" class="dropdown-item">Your Math Quiz results are ready</a>
+                        </div>
+                    </div>
+                    <div class="dropdown">
+                        <button class="btn btn-icon theme-toggle" id="theme-toggle">
+                            <i class="fas fa-sun"></i>
+                        </button>
+                        <div class="dropdown-menu">
+                            <a href="#" class="dropdown-item" data-theme="light">Light</a>
+                            <a href="#" class="dropdown-item" data-theme="dark">Dark</a>
+                            <a href="#" class="dropdown-item" data-theme="system">System</a>
+                        </div>
+                    </div>
+                    <div class="dropdown">
+                        <button class="avatar-btn">
+                            <div class="avatar">
+                                <span>ST</span>
+                            </div>
+                        </button>
+                        <div class="dropdown-menu">
+                            <div class="dropdown-header">
+                                <div class="user-info">
+                                    <p class="user-name">Student</p>
+                                    <p class="user-email">student@example.com</p>
+                                </div>
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            <a href="/student/profile.html" class="dropdown-item">
+                                <i class="fas fa-user"></i> Profile
+                            </a>
+                            <a href="/student/settings.html" class="dropdown-item">
+                                <i class="fas fa-cog"></i> Settings
+                            </a>
+                            <div class="dropdown-divider"></div>
+                            <a href="/" class="dropdown-item">
+                                <i class="fas fa-sign-out-alt"></i> Log out
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="mobile-nav" id="mobile-nav">
+            <ul class="nav-list">
+                <li class="nav-item active"><a href="/student/dashboard.html">Dashboard</a></li>
+                <li class="nav-item"><a href="/student/join.html">Join Quiz</a></li>
+                <li class="nav-item"><a href="/student/results.html">My Results</a></li>
+                <li class="nav-item"><a href="/student/profile.html">Profile</a></li>
+            </ul>
+        </div>
+
+        <main class="main-content">
+            <div class="container">
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">Dashboard</h1>
+                        <p class="page-description">Welcome back, Student! Here's what's happening with your quizzes.</p>
+                    </div>
+                    <a href="/student/join.html" class="btn btn-primary">Join a Quiz</a>
+                </div>
+
+                <div class="tabs">
+                    <div class="tab-list">
+                        <button class="tab-button active" data-tab="upcoming">Upcoming</button>
+                        <button class="tab-button" data-tab="completed">Completed</button>
+                    </div>
+                    
+                    <div class="tab-content active" id="upcoming-tab">
+                        <div class="quiz-cards" id="upcoming-quizzes">
+                            <!-- Upcoming quizzes will be loaded here -->
+                        </div>
+                    </div>
+                    
+                    <div class="tab-content" id="completed-tab">
+                        <div class="quiz-cards" id="completed-quizzes">
+                            <!-- Completed quizzes will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/js/common.js"></script>
+    <script src="/js/student.js"></script>
+</body>
+</html>
+

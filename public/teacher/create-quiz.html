@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Quiz - Quisly</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="main-header">
+            <div class="container header-container">
+                <div class="header-left">
+                    <button class="menu-toggle" id="menu-toggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1 class="logo">Quisly</h1>
+                </div>
+                <nav class="main-nav">
+                    <ul class="nav-list">
+                        <li class="nav-item"><a href="/teacher/dashboard.html">Dashboard</a></li>
+                        <li class="nav-item"><a href="/teacher/quizzes.html">My Quizzes</a></li>
+                        <li class="nav-item active"><a href="/teacher/create-quiz.html">Create Quiz</a></li>
+                        <li class="nav-item"><a href="/teacher/analytics.html">Analytics</a></li>
+                    </ul>
+                </nav>
+                <div class="header-actions">
+                    <div class="dropdown">
+                        <button class="avatar-btn">
+                            <div class="avatar">
+                                <span>TC</span>
+                            </div>
+                        </button>
+                        <div class="dropdown-menu">
+                            <div class="dropdown-header">
+                                <div class="user-info">
+                                    <p class="user-name">Teacher</p>
+                                    <p class="user-email">teacher@example.com</p>
+                                </div>
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            <a href="/teacher/profile.html" class="dropdown-item">
+                                <i class="fas fa-user"></i> Profile
+                            </a>
+                            <a href="/teacher/settings.html" class="dropdown-item">
+                                <i class="fas fa-cog"></i> Settings
+                            </a>
+                            <div class="dropdown-divider"></div>
+                            <a href="/" class="dropdown-item">
+                                <i class="fas fa-sign-out-alt"></i> Log out
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="mobile-nav" id="mobile-nav">
+            <ul class="nav-list">
+                <li class="nav-item"><a href="/teacher/dashboard.html">Dashboard</a></li>
+                <li class="nav-item"><a href="/teacher/quizzes.html">My Quizzes</a></li>
+                <li class="nav-item active"><a href="/teacher/create-quiz.html">Create Quiz</a></li>
+                <li class="nav-item"><a href="/teacher/analytics.html">Analytics</a></li>
+            </ul>
+        </div>
+
+        <main class="main-content">
+            <div class="container">
+                <div class="page-header">
+                    <div class="back-title">
+                        <a href="/teacher/dashboard.html" class="back-link">
+                            <i class="fas fa-arrow-left"></i>
+                        </a>
+                        <h1 class="page-title">Create Quiz</h1>
+                    </div>
+                </div>
+
+                <form id="create-quiz-form">
+                    <div class="tabs">
+                        <div class="tab-list">
+                            <button type="button" class="tab-button active" data-tab="details">Quiz Details</button>
+                            <button type="button" class="tab-button" data-tab="questions">Questions</button>
+                            <button type="button" class="tab-button" data-tab="settings">Settings</button>
+                        </div>
+                        
+                        <div class="tab-content active" id="details-tab">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h2 class="card-title">Quiz Information</h2>
+                                    <p class="card-description">Enter the basic information about your quiz</p>
+                                </div>
+                                <div class="card-content">
+                                    <div class="form-group">
+                                        <label for="title">Quiz Title</label>
+                                        <input type="text" id="title" name="title" placeholder="e.g., Science Quiz: Chapter 5" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="description">Description</label>
+                                        <textarea id="description" name="description" placeholder="Provide a brief description of the quiz" rows="4"></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="timeLimit">Time Limit (minutes)</label>
+                                        <input type="number" id="timeLimit" name="timeLimit" min="1" max="180" value="10">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="tab-content" id="questions-tab">
+                            <div id="questions-container">
+                                <!-- Questions will be added here -->
+                                <div class="card question-card" data-question-id="q1">
+                                    <div class="card-header">
+                                        <div class="question-header">
+                                            <h2 class="card-title">Question 1</h2>
+                                            <button type="button" class="btn btn-icon remove-question-btn" disabled>
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-content">
+                                        <div class="form-group">
+                                            <label for="q1-type">Question Type</label>
+                                            <select id="q1-type" name="questions[0].type" class="question-type-select">
+                                                <option value="multiple-choice">Multiple Choice</option>
+                                                <option value="true-false">True/False</option>
+                                                <option value="numerical">Numerical</option>
+                                                <option value="short-answer">Short Answer</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            <label for="q1-text">Question Text</label>
+                                            <textarea id="q1-text" name="questions[0].text" placeholder="Enter your question here" required></textarea>
+                                        </div>
+                                        
+                                        <div class="question-options" id="q1-options-container">
+                                            <div class="form-group">
+                                                <label>Options</label>
+                                                <div class="option-items">
+                                                    <div class="option-item">
+                                                        <input type="text" name="questions[0].options[0]" placeholder="Option 1" class="option-input">
+                                                        <button type="button" class="btn btn-sm option-correct-btn">Set Correct</button>
+                                                    </div>
+                                                    <div class="option-item">
+                                                        <input type="text" name="questions[0].options[1]" placeholder="Option 2" class="option-input">
+                                                        <button type="button" class="btn btn-sm option-correct-btn">Set Correct</button>
+                                                    </div>
+                                                    <div class="option-item">
+                                                        <input type="text" name="questions[0].options[2]" placeholder="Option 3" class="option-input">
+                                                        <button type="button" class="btn btn-sm option-correct-btn">Set Correct</button>
+                                                    </div>
+                                                    <div class="option-item">
+                                                        <input type="text" name="questions[0].options[3]" placeholder="Option 4" class="option-input">
+                                                        <button type="button" class="btn btn-sm option-correct-btn">Set Correct</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <input type="hidden" name="questions[0].correctAnswer" id="q1-correct-answer">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button type="button" id="add-question-btn" class="btn btn-outline btn-block">
+                                <i class="fas fa-plus-circle"></i> Add Question
+                            </button>
+                        </div>
+                        
+                        <div class="tab-content" id="settings-tab">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h2 class="card-title">Quiz Settings</h2>
+                                    <p class="card-description">Configure additional settings for your quiz</p>
+                                </div>
+                                <div class="card-content">
+                                    <div class="setting-item">
+                                        <div class="setting-info">
+                                            <label for="shuffleQuestions">Shuffle Questions</label>
+                                            <p class="setting-description">Randomize the order of questions for each student</p>
+                                        </div>
+                                        <div class="switch-container">
+                                            <input type="checkbox" id="shuffleQuestions" name="shuffleQuestions" class="switch-input">
+                                            <label for="shuffleQuestions" class="switch"></label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="setting-item">
+                                        <div class="setting-info">
+                                            <label for="shuffleOptions">Shuffle Answer Options</label>
+                                            <p class="setting-description">Randomize the order of answer options for multiple choice questions</p>
+                                        </div>
+                                        <div class="switch-container">
+                                            <input type="checkbox" id="shuffleOptions" name="shuffleOptions" class="switch-input">
+                                            <label for="shuffleOptions" class="switch"></label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <a href="/teacher/dashboard.html" class="btn btn-outline">Cancel</a>
+                            <button type="submit" class="btn btn-primary" id="save-quiz-btn">
+                                <i class="fas fa-save"></i> Save Quiz
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script src="/js/common.js"></script>
+    <script src="/js/create-quiz.js"></script>
+</body>
+</html>
+

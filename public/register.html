@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Quisly</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="auth-page">
+    <div class="auth-container">
+        <div class="card auth-card">
+            <div class="card-header">
+                <h2 class="card-title">Create an account</h2>
+                <p class="card-description">Register to start creating or participating in quizzes</p>
+            </div>
+            <div class="card-content">
+                <form id="register-form" class="auth-form">
+                    <div class="form-group">
+                        <label for="name">Full Name</label>
+                        <input type="text" id="name" name="name" placeholder="John Doe" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" placeholder="john@example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <div class="form-group">
+                        <label>I am a:</label>
+                        <div class="radio-group">
+                            <div class="radio-option">
+                                <input type="radio" id="student" name="role" value="student" checked>
+                                <label for="student">Student</label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="teacher" name="role" value="teacher">
+                                <label for="teacher">Teacher</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-alert" id="register-alert" style="display: none;"></div>
+                    <button type="submit" class="btn btn-primary btn-block" id="register-button">Register</button>
+                    <div class="auth-links">
+                        Already have an account? <a href="/login.html">Login</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/auth.js"></script>
+</body>
+</html>
+

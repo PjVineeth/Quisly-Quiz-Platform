@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor Quiz - Quisly</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="main-header">
+            <div class="container header-container">
+                <div class="header-left">
+                    <button class="menu-toggle" id="menu-toggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1 class="logo">Quisly</h1>
+                </div>
+                <nav class="main-nav">
+                    <ul class="nav-list">
+                        <li class="nav-item"><a href="/teacher/dashboard.html">Dashboard</a></li>
+                        <li class="nav-item active"><a href="/teacher/quizzes.html">My Quizzes</a></li>
+                        <li class="nav-item"><a href="/teacher/create-quiz.html">Create Quiz</a></li>
+                        <li class="nav-item"><a href="/teacher/analytics.html">Analytics</a></li>
+                    </ul>
+                </nav>
+                <div class="header-actions">
+                    <div class="dropdown">
+                        <button class="avatar-btn">
+                            <div class="avatar">
+                                <span>TC</span>
+                            </div>
+                        </button>
+                        <div class="dropdown-menu">
+                            <div class="dropdown-header">
+                                <div class="user-info">
+                                    <p class="user-name">Teacher</p>
+                                    <p class="user-email">teacher@example.com</p>
+                                </div>
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            <a href="/teacher/profile.html" class="dropdown-item">
+                                <i class="fas fa-user"></i> Profile
+                            </a>
+                            <a href="/teacher/settings.html" class="dropdown-item">
+                                <i class="fas fa-cog"></i> Settings
+                            </a>
+                            <div class="dropdown-divider"></div>
+                            <a href="/" class="dropdown-item">
+                                <i class="fas fa-sign-out-alt"></i> Log out
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="mobile-nav" id="mobile-nav">
+            <ul class="nav-list">
+                <li class="nav-item"><a href="/teacher/dashboard.html">Dashboard</a></li>
+                <li class="nav-item active"><a href="/teacher/quizzes.html">My Quizzes</a></li>
+                <li class="nav-item"><a href="/teacher/create-quiz.html">Create Quiz</a></li>
+                <li class="nav-item"><a href="/teacher/analytics.html">Analytics</a></li>
+            </ul>
+        </div>
+
+        <main class="main-content">
+            <div class="container">
+                <div class="page-header">
+                    <div class="back-title">
+                        <a href="/teacher/dashboard.html" class="back-link">
+                            <i class="fas fa-arrow-left"></i>
+                        </a>
+                        <div>
+                            <h1 class="page-title" id="quiz-title">Science Quiz: Chapter 5</h1>
+                            <div class="quiz-code">
+                                Code: <span id="quiz-code">SCI123</span>
+                                <button class="btn btn-icon" id="copy-code-btn">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="page-actions">
+                        <div class="quiz-timer">
+                            <i class="fas fa-clock"></i>
+                            <span id="time-left">00:45:30</span>
+                        </div>
+                        <button class="btn btn-danger" id="end-quiz-btn">End Quiz</button>
+                    </div>
+                </div>
+
+                <div class="monitor-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Participants (<span id="participant-count">5</span>)</h2>
+                            <p class="card-description">Real-time progress of quiz participants</p>
+                        </div>
+                        <div class="card-content participants-list" id="participants-container">
+                            <!-- Participants will be loaded here -->
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Question Statistics</h2>
+                            <p class="card-description">Performance data for each question</p>
+                        </div>
+                        <div class="card-content" id="question-stats-container">
+                            <!-- Question statistics will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="stats-cards">
+                    <div class="card stats-card">
+                        <div class="card-header">
+                            <h3 class="stats-title">Completion Rate</h3>
+                            <i class="fas fa-users stats-icon"></i>
+                        </div>
+                        <div class="card-content">
+                            <div class="stats-value" id="completion-rate">40%</div>
+                            <p class="stats-detail" id="completion-detail">2 of 5 completed</p>
+                        </div>
+                    </div>
+                    
+                    <div class="card stats-card">
+                        <div class="card-header">
+                            <h3 class="stats-title">Average Score</h3>
+                            <i class="fas fa-chart-bar stats-icon"></i>
+                        </div>
+                        <div class="card-content">
+                            <div class="stats-value" id="average-score">85%</div>
+                            <p class="stats-detail" id="score-detail">Based on 2 completed quizzes</p>
+                        </div>
+                    </div>
+                    
+                    <div class="card stats-card">
+                        <div class="card-header">
+                            <h3 class="stats-title">Average Time</h3>
+                            <i class="fas fa-clock stats-icon"></i>
+                        </div>
+                        <div class="card-content">
+                            <div class="stats-value" id="average-time">8:45</div>
+                            <p class="stats-detail">Average completion time</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/common.js"></script>
+    <script src="/js/monitor.js"></script>
+</body>
+</html>
+
