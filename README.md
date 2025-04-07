@@ -21,7 +21,7 @@ Before you begin, ensure you have the following installed:
 
 ## Installation
 
-1. Clone the repository:
+1. Clone the repository: https://github.com/PjVineeth/Quisly-Quiz-Platform.git
 ```bash
 git clone [your-repository-url]
 cd Quisly-Quiz-Platform
