@@ -23,7 +23,7 @@ Before you begin, ensure you have the following installed:
 
 1. Clone the repository: https://github.com/PjVineeth/Quisly-Quiz-Platform.git
 ```bash
-git clone [your-repository-url]
+git clone https://github.com/PjVineeth/Quisly-Quiz-Platform.git
 cd Quisly-Quiz-Platform
 ```
 
