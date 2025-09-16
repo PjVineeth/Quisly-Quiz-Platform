@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { Suspense, useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -38,7 +38,7 @@ const completedQuizzes = [
   },
 ]
 
-export default function StudentDashboard() {
+function DashboardContent() {
   const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState("upcoming")
 
@@ -51,31 +51,39 @@ export default function StudentDashboard() {
   }, [searchParams])
 
   return (
-    <StudentLayout>
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-            <p className="text-muted-foreground">Welcome back, Student! Here's what's happening with your quizzes.</p>
-          </div>
-          <Button asChild>
-            <Link href="/student/join">Join a Quiz</Link>
-          </Button>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground">Welcome back, Student! Here's what's happening with your quizzes.</p>
         </div>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full max-w-[400px] grid-cols-2">
-            <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-            <TabsTrigger value="completed">Completed</TabsTrigger>
-          </TabsList>
-          <TabsContent value="upcoming">
-            <UpcomingQuizzes />
-          </TabsContent>
-          <TabsContent value="completed">
-            <CompletedQuizzes />
-          </TabsContent>
-        </Tabs>
+        <Button asChild>
+          <Link href="/student/join">Join a Quiz</Link>
+        </Button>
       </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full max-w-[400px] grid-cols-2">
+          <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+          <TabsTrigger value="completed">Completed</TabsTrigger>
+        </TabsList>
+        <TabsContent value="upcoming">
+          <UpcomingQuizzes />
+        </TabsContent>
+        <TabsContent value="completed">
+          <CompletedQuizzes />
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}
+
+export default function StudentDashboard() {
+  return (
+    <StudentLayout>
+      <Suspense fallback={null}>
+        <DashboardContent />
+      </Suspense>
     </StudentLayout>
   )
 }
