@@ -268,33 +268,3 @@ npm start
 3. Commit changes (`git commit -m 'Add amazing feature'`)
 4. Push to branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
-
-### Code Standards
-- **TypeScript**: Strict mode enabled
-- **ESLint**: Follow configured rules
-- **Components**: Use shadcn/ui patterns
-- **API**: RESTful design principles
-- **Database**: Mongoose schema validation
-
-### Testing
-```bash
-# Run linting
-npm run lint
-
-# Type checking
-npx tsc --noEmit
-```
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙋‍♂️ Support
-
-For support, email support@quisly.com or join our [Discord community](https://discord.gg/quisly).
-
----
-
-**Built with ❤️ using Next.js, Express.js, MongoDB, and Socket.IO** 
