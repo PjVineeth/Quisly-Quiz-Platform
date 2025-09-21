@@ -15,7 +15,7 @@ interface Quiz {
   description: string
   code: string
   timeLimit: number
-  questions: Array<{
+  questions?: Array<{
     _id: string
     type: string
     text: string
@@ -108,7 +108,7 @@ export default function TeacherQuizzes() {
                   </div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Users className="h-4 w-4" />
-                    <span>{quiz.questions.length} questions</span>
+                    <span>{quiz.questions?.length || 0} questions</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">Quiz Code:</span>

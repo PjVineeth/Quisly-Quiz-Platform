@@ -1,65 +1,104 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Calendar } from "lucide-react"
+import { Calendar, Clock, Users } from "lucide-react"
+import { useState, useEffect } from "react"
+import { useToast } from "@/hooks/use-toast"
+import Link from "next/link"
 
-// Mock data for upcoming quizzes
-const upcomingQuizzes = [
-  {
-    id: "1",
-    title: "History Quiz",
-    subject: "History",
-    date: "2024-03-20T10:00:00",
-    teacher: "Mr. Smith",
-  },
-  {
-    id: "2",
-    title: "English Quiz",
-    subject: "English",
-    date: "2024-03-22T14:30:00",
-    teacher: "Ms. Johnson",
-  },
-]
+interface ActiveQuiz {
+  _id: string;
+  title: string;
+  description?: string;
+  code: string;
+  timeLimit: number;
+  status: 'active';
+  updatedAt: string;
+}
 
 export function UpcomingQuizzes() {
+  const [activeQuizzes, setActiveQuizzes] = useState<ActiveQuiz[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchActiveQuizzes();
+  }, []);
+
+  const fetchActiveQuizzes = async () => {
+    try {
+      const response = await fetch('/api/quizzes/active');
+      if (response.ok) {
+        const data = await response.json();
+        setActiveQuizzes(data);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to fetch active quizzes",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching active quizzes:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch active quizzes",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
-      {upcomingQuizzes.length === 0 ? (
+      {loading ? (
         <Card>
           <CardContent className="py-8 text-center">
-            <p className="text-muted-foreground">No upcoming quizzes at the moment.</p>
+            <p className="text-muted-foreground">Loading active quizzes...</p>
+          </CardContent>
+        </Card>
+      ) : activeQuizzes.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center">
+            <p className="text-muted-foreground">No active quizzes at the moment.</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Ask your teacher for a quiz code to join an active quiz.
+            </p>
           </CardContent>
         </Card>
       ) : (
-        upcomingQuizzes.map((quiz) => (
-          <Card key={quiz.id}>
+        activeQuizzes.map((quiz) => (
+          <Card key={quiz._id}>
             <CardHeader className="pb-2">
               <div className="flex justify-between items-start">
                 <div>
                   <CardTitle>{quiz.title}</CardTitle>
-                  <CardDescription>By {quiz.teacher}</CardDescription>
+                  <CardDescription>Code: {quiz.code}</CardDescription>
                 </div>
-                <Badge>{quiz.subject}</Badge>
+                <Badge variant="default">Active Now</Badge>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center text-sm text-muted-foreground">
-                <Calendar className="mr-1 h-4 w-4" />
-                <time dateTime={quiz.date}>
-                  {new Date(quiz.date).toLocaleDateString("en-US", {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </time>
+              <div className="space-y-2">
+                {quiz.description && (
+                  <p className="text-sm text-muted-foreground">{quiz.description}</p>
+                )}
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <Clock className="mr-1 h-4 w-4" />
+                  <span>Time Limit: {quiz.timeLimit} minutes</span>
+                </div>
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <Calendar className="mr-1 h-4 w-4" />
+                  <span>Started: {new Date(quiz.updatedAt).toLocaleString()}</span>
+                </div>
               </div>
             </CardContent>
             <CardFooter>
-              <Button variant="outline" className="w-full">
-                Set Reminder
+              <Button asChild className="w-full">
+                <Link href={`/student/quiz/${quiz.code}`}>
+                  Join Quiz
+                </Link>
               </Button>
             </CardFooter>
           </Card>

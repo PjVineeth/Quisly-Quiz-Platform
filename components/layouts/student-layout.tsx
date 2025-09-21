@@ -15,9 +15,11 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Bell, LogOut, Menu, Moon, Settings, Sun, User } from "lucide-react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import { useTheme } from "next-themes"
+import { useAuth } from "@/hooks/use-auth"
+import { useToast } from "@/hooks/use-toast"
 
 interface StudentLayoutProps {
   children: React.ReactNode
@@ -25,20 +27,65 @@ interface StudentLayoutProps {
 
 export function StudentLayout({ children }: StudentLayoutProps) {
   const pathname = usePathname()
+  const router = useRouter()
   const { setTheme } = useTheme()
-  const [notifications] = useState(2) // Mock notification count
+  const [notifications] = useState(0)
   const [mounted, setMounted] = useState(false)
+  const { user, loading: authLoading } = useAuth()
+  const { toast } = useToast()
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  const navigation = [
-    { name: "Dashboard", href: "/student/dashboard" },
-    { name: "Join Quiz", href: "/student/join" },
-    // { name: "My Results", href: "/student/results" },
-    // { name: "Profile", href: "/student/profile" },
-  ]
+  useEffect(() => {
+    if (authLoading) return
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to continue.",
+        variant: "destructive",
+      })
+      router.replace('/login')
+      return
+    }
+    // Enforce role-based access for student area
+    if (user && user.role !== 'student') {
+      toast({
+        title: "Access Denied",
+        description: "Only students can access this area.",
+        variant: "destructive",
+      })
+      router.replace('/teacher/dashboard')
+      return
+    }
+  }, [authLoading, user])
+
+  // const navigation = [
+  //   { name: "Dashboard", href: "/student/dashboard" },
+  //   { name: "Join Quiz", href: "/student/join" },
+  //   // { name: "My Results", href: "/student/results" },
+  //   // { name: "Profile", href: "/student/profile" },
+  // ]
+
+  if (authLoading || !user) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <header className="sticky top-0 z-40 border-b bg-background">
+          <div className="container flex h-16 items-center justify-between py-4">
+            <Link href="/" className="flex items-center gap-2">
+              <span className="text-xl font-bold">Quisly</span>
+            </Link>
+          </div>
+        </header>
+        <main className="flex-1 container py-6">
+          <p className="text-center text-muted-foreground">
+            {authLoading ? 'Checking authentication...' : 'Redirecting...'}
+          </p>
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -53,7 +100,7 @@ export function StudentLayout({ children }: StudentLayoutProps) {
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="w-[240px] sm:w-[300px]">
-                <nav className="flex flex-col gap-4 py-4">
+                {/* <nav className="flex flex-col gap-4 py-4">
                   {navigation.map((item) => (
                     <Link
                       key={item.name}
@@ -65,13 +112,13 @@ export function StudentLayout({ children }: StudentLayoutProps) {
                       {item.name}
                     </Link>
                   ))}
-                </nav>
+                </nav> */}
               </SheetContent>
             </Sheet>
             <Link href="/student/dashboard" className="flex items-center gap-2">
               <span className="text-xl font-bold">Quisly</span>
             </Link>
-            <nav className="hidden md:flex gap-6">
+            {/* <nav className="hidden md:flex gap-6">
               {navigation.map((item) => (
                 <Link
                   key={item.name}
@@ -85,7 +132,7 @@ export function StudentLayout({ children }: StudentLayoutProps) {
                   {item.name}
                 </Link>
               ))}
-            </nav>
+            </nav> */}
           </div>
           <div className="flex items-center gap-2">
             <DropdownMenu>
@@ -153,11 +200,17 @@ export function StudentLayout({ children }: StudentLayoutProps) {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/" className="flex items-center">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Log out</span>
-                  </Link>
+                <DropdownMenuItem
+                  onClick={async () => {
+                    try {
+                      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+                    } catch (e) {}
+                    router.replace('/login')
+                  }}
+                  className="flex items-center cursor-pointer"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

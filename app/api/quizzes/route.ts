@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Quiz from '@/lib/models/Quiz';
+import { getUserFromRequest } from '@/lib/auth';
 import crypto from 'crypto';
 
 // Function to generate a unique quiz code
@@ -29,6 +30,22 @@ async function findUniqueCode(): Promise<string> {
 
 export async function POST(req: NextRequest) {
   try {
+    // Get authenticated user
+    const user = await getUserFromRequest(req);
+    if (!user) {
+      return NextResponse.json(
+        { message: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    if (user.role !== 'teacher') {
+      return NextResponse.json(
+        { message: 'Only teachers can create quizzes' },
+        { status: 403 }
+      );
+    }
+
     // Connect to MongoDB
     await connectDB();
 
@@ -63,11 +80,13 @@ export async function POST(req: NextRequest) {
         correctAnswer: q.correctAnswer
       })),
       status: 'draft',
-      createdBy: 'teacher123' // Hardcoded for now, replace with actual user ID when auth is added
+      createdBy: user._id.toString() // Use authenticated teacher's ID
     });
 
     // Save to database
     await newQuiz.save();
+
+    console.log(`Quiz created by teacher ${user.name} (${user.email}): ${title}`);
 
     // Return the created quiz
     return NextResponse.json(newQuiz, { status: 201 });

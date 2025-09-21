@@ -20,19 +20,34 @@ export async function GET(
       );
     }
 
-    // Return quiz status and basic info
+    // Check if quiz is active
+    if (quiz.status !== 'active') {
+      return NextResponse.json(
+        { message: 'Quiz is not currently active' },
+        { status: 400 }
+      );
+    }
+
+    // Return quiz data for taking the quiz
     return NextResponse.json({
       id: quiz._id,
       title: quiz.title,
-      status: quiz.status,
-      timeLimit: quiz.timeLimit
+      description: quiz.description,
+      timeLimit: quiz.timeLimit,
+      questions: quiz.questions.map(q => ({
+        id: q.id,
+        type: q.type,
+        text: q.text,
+        options: q.options
+        // Don't include correctAnswer for security
+      }))
     });
 
   } catch (error) {
-    console.error('Error verifying quiz:', error);
+    console.error('Error fetching quiz:', error);
     return NextResponse.json(
-      { message: 'Failed to verify quiz' },
+      { message: 'Failed to fetch quiz' },
       { status: 500 }
     );
   }
-} 
+}

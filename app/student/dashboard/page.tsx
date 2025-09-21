@@ -6,9 +6,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { StudentLayout } from "@/components/layouts/student-layout"
 import { Badge } from "@/components/ui/badge"
-import { Clock, Trophy, Calendar } from "lucide-react"
+// import { Clock, Trophy, Calendar } from "lucide-react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
+import { useAuth } from "@/hooks/use-auth"
+import { useRouter } from "next/navigation"
+import { useToast } from "@/hooks/use-toast"
 import { CompletedQuizzes } from "./completed-quizzes"
 import { UpcomingQuizzes } from "./upcoming-quizzes"
 
@@ -64,7 +67,7 @@ function DashboardContent() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full max-w-[400px] grid-cols-2">
-          <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+          <TabsTrigger value="upcoming">Active Quizzes</TabsTrigger>
           <TabsTrigger value="completed">Completed</TabsTrigger>
         </TabsList>
         <TabsContent value="upcoming">
@@ -79,6 +82,42 @@ function DashboardContent() {
 }
 
 export default function StudentDashboard() {
+  const { user, loading: authLoading } = useAuth()
+  const router = useRouter()
+  const { toast } = useToast()
+
+  useEffect(() => {
+    if (authLoading) return
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to continue.",
+        variant: "destructive",
+      })
+      router.replace('/login')
+      return
+    }
+    if (user.role !== 'student') {
+      toast({
+        title: "Access Denied",
+        description: "Only students can access this area.",
+        variant: "destructive",
+      })
+      router.replace('/teacher/dashboard')
+    }
+  }, [authLoading, user, router, toast])
+
+  // Layout performs redirects. Show a minimal fallback here while redirecting or loading.
+  if (authLoading || !user || user.role !== 'student') {
+    return (
+      <StudentLayout>
+        <div className="container py-10 text-center">
+          <p>{authLoading ? 'Checking authentication...' : 'Redirecting...'}</p>
+        </div>
+      </StudentLayout>
+    )
+  }
+
   return (
     <StudentLayout>
       <Suspense fallback={null}>

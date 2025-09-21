@@ -1,48 +1,60 @@
-import mongoose from 'mongoose';
+import mongoose, { Document, Schema } from 'mongoose';
 
-const AnswerSchema = new mongoose.Schema({
-  questionIndex: {
-    type: Number,
-    required: true,
-  },
-  selectedOption: {
-    type: Number,
-    required: true,
-  },
-  isCorrect: {
-    type: Boolean,
-    required: true,
-  },
-});
+// Interface for QuizSubmission document
+interface IQuizSubmission extends Document {
+  quizId: string;
+  quizCode: string;
+  studentId: string;
+  studentName: string;
+  studentEmail: string;
+  answers: Map<string, string>;
+  score: number;
+  timeSpent: number;
+  submittedAt: Date;
+}
 
-const QuizSubmissionSchema = new mongoose.Schema({
-  quiz: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Quiz',
-    required: true,
+// Schema for QuizSubmission
+const QuizSubmissionSchema = new Schema({
+  quizId: {
+    type: String,
+    required: true
   },
-  student: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
+  quizCode: {
+    type: String,
+    required: true
   },
-  answers: [AnswerSchema],
+  studentId: {
+    type: String,
+    required: true
+  },
+  studentName: {
+    type: String,
+    required: true
+  },
+  studentEmail: {
+    type: String,
+    required: true
+  },
+  answers: {
+    type: Map,
+    of: String,
+    required: true
+  },
   score: {
     type: Number,
-    required: true,
+    required: true
   },
-  totalQuestions: {
+  timeSpent: {
     type: Number,
-    required: true,
+    required: true
   },
   submittedAt: {
     type: Date,
-    default: Date.now,
-  },
-  timeTaken: {
-    type: Number,  // Time taken in seconds
-    required: true,
-  },
+    default: Date.now
+  }
+}, {
+  timestamps: true
 });
 
-export default mongoose.models.QuizSubmission || mongoose.model('QuizSubmission', QuizSubmissionSchema); 
+// Create and export the model
+export default mongoose.models.QuizSubmission || mongoose.model<IQuizSubmission>('QuizSubmission', QuizSubmissionSchema); 
