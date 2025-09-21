@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Clock, Trophy } from "lucide-react"
 import Link from "next/link"
 import { useState, useEffect } from "react"
+import { useToast } from "@/hooks/use-toast"
 
 interface QuizResult {
   id: string
@@ -11,70 +12,125 @@ interface QuizResult {
   timeSpent: number
   submittedAt: string
   quiz: {
+    id: string
     title: string
-    questions: Array<{
-      id: string
-      text: string
-      correctAnswer: string
-      type: string
-    }>
+    code: string
+    timeLimit: number
+    totalQuestions: number
   }
   answers: Record<string, string>
 }
 
 export function CompletedQuizzes() {
   const [completedQuizzes, setCompletedQuizzes] = useState<QuizResult[]>([])
+  const [loading, setLoading] = useState(true)
+  const { toast } = useToast()
 
   useEffect(() => {
-    // Get demo quiz results from localStorage
-    const demoResults = localStorage.getItem('demoQuizResults')
-    if (demoResults) {
+    const fetchSubmissions = async () => {
       try {
-        const parsedDemoResults = JSON.parse(demoResults)
-        if (parsedDemoResults) {
-          // Handle both array and single result formats
-          const resultsArray = Array.isArray(parsedDemoResults) 
-            ? parsedDemoResults 
-            : [parsedDemoResults];
-          
-          // Sort by submission date, most recent first
-          resultsArray.sort((a, b) => 
-            new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
-          );
-          
-          // Update quiz titles based on ID
-          const updatedResults = resultsArray.map(result => {
-            let title = result.quiz.title;
-            if (result.id.startsWith("DEMO_")) {
-              // Assign different titles based on the timestamp in the ID
-              const timestamp = parseInt(result.id.split("_")[1]);
-              const titles = [
-                "History Quiz: Ancient Civilizations",
-                "Mathematics: Algebra Basics",
-                "English Literature: Shakespeare's Works",
-                "Geography: World Capitals",
-                "Biology: Human Anatomy"
-              ];
-              title = titles[timestamp % titles.length];
+        setLoading(true)
+        
+        // First, get demo quiz results from localStorage
+        const demoResults = localStorage.getItem('demoQuizResults')
+        let demoSubmissions: QuizResult[] = []
+        
+        if (demoResults) {
+          try {
+            const parsedDemoResults = JSON.parse(demoResults)
+            if (parsedDemoResults) {
+              const resultsArray = Array.isArray(parsedDemoResults) 
+                ? parsedDemoResults 
+                : [parsedDemoResults];
+              
+              demoSubmissions = resultsArray.map(result => ({
+                id: result.id,
+                score: result.score,
+                timeSpent: result.timeSpent,
+                submittedAt: result.submittedAt,
+                quiz: {
+                  id: 'demo',
+                  title: result.quiz.title,
+                  code: 'DEMO123',
+                  timeLimit: 10,
+                  totalQuestions: result.quiz.questions?.length || 0
+                },
+                answers: result.answers
+              }))
             }
-            return {
-              ...result,
-              quiz: {
-                ...result.quiz,
-                title
-              }
-            };
-          });
-          
-          setCompletedQuizzes(updatedResults);
+          } catch (e) {
+            console.error('Error parsing demo results:', e)
+          }
         }
-      } catch (e) {
-        console.error('Error parsing demo results:', e)
+
+        // Then fetch real quiz submissions from API (authenticated)
+        const response = await fetch('/api/student/submissions', { credentials: 'include' })
+        if (response.ok) {
+          const data = await response.json()
+          const realSubmissions = data.submissions.map((submission: any) => ({
+            id: submission.id,
+            score: submission.score,
+            timeSpent: submission.timeSpent,
+            submittedAt: submission.submittedAt,
+            quiz: submission.quiz,
+            answers: submission.answers
+          }))
+
+          // Only show real submissions for the authenticated student
+          realSubmissions.sort((a: QuizResult, b: QuizResult) =>
+            new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
+          )
+
+          setCompletedQuizzes(realSubmissions)
+        } else {
+          if (response.status === 401) {
+            toast({
+              title: "Authentication Required",
+              description: "Please log in to view your completed quizzes.",
+              variant: "destructive",
+            })
+          } else if (response.status === 403) {
+            toast({
+              title: "Access Denied",
+              description: "Only students can view completed quizzes.",
+              variant: "destructive",
+            })
+          } else {
+            toast({
+              title: "Error",
+              description: "Failed to load your submissions.",
+              variant: "destructive",
+            })
+          }
+          // Fall back to showing nothing (do not mix demo data here)
+          setCompletedQuizzes([])
+        }
+      } catch (error) {
+        console.error('Error fetching submissions:', error)
+        toast({
+          title: "Error",
+          description: "Failed to load quiz submissions. Showing demo results only.",
+          variant: "destructive",
+        })
+      } finally {
+        setLoading(false)
       }
     }
 
-    // TODO: Fetch regular quiz results from API when implemented
-  }, [])
+    fetchSubmissions()
+  }, [toast])
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <Card>
+          <CardContent className="py-8 text-center">
+            <p className="text-muted-foreground">Loading your quiz submissions...</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-4">
@@ -92,10 +148,10 @@ export function CompletedQuizzes() {
                 <div>
                   <CardTitle>{result.quiz.title}</CardTitle>
                   <CardDescription>
-                    Completed on {new Date(result.submittedAt).toLocaleDateString()}
+                    Code: {result.quiz.code} • Completed on {new Date(result.submittedAt).toLocaleDateString()}
                   </CardDescription>
                 </div>
-                <Badge variant="outline">Quiz</Badge>
+                <Badge variant="outline">{result.quiz.code === 'DEMO123' ? 'Demo' : 'Quiz'}</Badge>
               </div>
             </CardHeader>
             <CardContent>
@@ -108,6 +164,8 @@ export function CompletedQuizzes() {
                       minute: "2-digit",
                     })}
                   </time>
+                  <span className="mx-2">•</span>
+                  <span>{result.timeSpent}s</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Trophy className="h-4 w-4 text-yellow-500" />
@@ -115,6 +173,9 @@ export function CompletedQuizzes() {
                     {result.score.toFixed(1)}%
                   </span>
                 </div>
+              </div>
+              <div className="mt-2 text-sm text-muted-foreground">
+                {result.quiz.totalQuestions} questions • {result.quiz.timeLimit} min time limit
               </div>
             </CardContent>
             <CardFooter>

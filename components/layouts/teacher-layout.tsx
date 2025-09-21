@@ -15,9 +15,11 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Bell, LogOut, Menu, Moon, Settings, Sun, User } from "lucide-react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import { useTheme } from "next-themes"
+import { useAuth } from "@/hooks/use-auth"
+import { useToast } from "@/hooks/use-toast"
 
 interface TeacherLayoutProps {
   children: React.ReactNode
@@ -25,13 +27,39 @@ interface TeacherLayoutProps {
 
 export function TeacherLayout({ children }: TeacherLayoutProps) {
   const pathname = usePathname()
+  const router = useRouter()
   const { setTheme } = useTheme()
-  const [notifications] = useState(3) // Mock notification count
+  const [notifications] = useState(0)
   const [mounted, setMounted] = useState(false)
+  const { user, loading: authLoading } = useAuth()
+  const { toast } = useToast()
 
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  useEffect(() => {
+    if (authLoading) return
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to continue.",
+        variant: "destructive",
+      })
+      router.replace('/login')
+      return
+    }
+    // Enforce role-based access for teacher area
+    if (user && user.role !== 'teacher') {
+      toast({
+        title: "Access Denied",
+        description: "Only teachers can access this area.",
+        variant: "destructive",
+      })
+      router.replace('/student/dashboard')
+      return
+    }
+  }, [authLoading, user])
 
   const navigation = [
     { name: "Dashboard", href: "/teacher/dashboard" },
@@ -39,6 +67,25 @@ export function TeacherLayout({ children }: TeacherLayoutProps) {
     { name: "Create Quiz", href: "/teacher/quizzes/create" },
     // { name: "Analytics", href: "/teacher/analytics" },
   ]
+
+  if (authLoading || !user) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <header className="sticky top-0 z-40 border-b bg-background">
+          <div className="container flex h-16 items-center justify-between py-4">
+            <Link href="/" className="flex items-center gap-2">
+              <span className="text-xl font-bold">Quisly</span>
+            </Link>
+          </div>
+        </header>
+        <main className="flex-1 container py-6">
+          <p className="text-center text-muted-foreground">
+            {authLoading ? 'Checking authentication...' : 'Redirecting...'}
+          </p>
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -154,11 +201,17 @@ export function TeacherLayout({ children }: TeacherLayoutProps) {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/" className="flex items-center">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Log out</span>
-                  </Link>
+                <DropdownMenuItem
+                  onClick={async () => {
+                    try {
+                      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+                    } catch (e) {}
+                    router.replace('/login')
+                  }}
+                  className="flex items-center cursor-pointer"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

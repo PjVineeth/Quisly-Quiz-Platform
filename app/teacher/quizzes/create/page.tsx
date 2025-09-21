@@ -16,6 +16,7 @@ import { PlusCircle, Trash2, Save, ArrowLeft } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/hooks/use-auth"
 
 type QuestionType = "multiple-choice" | "true-false" | "numerical" | "short-answer"
 
@@ -30,6 +31,7 @@ interface Question {
 export default function CreateQuiz() {
   const router = useRouter()
   const { toast } = useToast()
+  const { user, loading: authLoading } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [quizData, setQuizData] = useState({
     title: "",
@@ -122,29 +124,63 @@ export default function CreateQuiz() {
     )
   }
 
+  // Check authentication
+  if (authLoading) {
+    return (
+      <TeacherLayout>
+        <div className="container py-10 text-center">
+          <p>Checking authentication...</p>
+        </div>
+      </TeacherLayout>
+    )
+  }
+
+  if (!user) {
+    toast({
+      title: "Authentication Required",
+      description: "Please log in to create quizzes.",
+      variant: "destructive",
+    })
+    router.push('/login')
+    return null
+  }
+
+  if (user.role !== 'teacher') {
+    toast({
+      title: "Access Denied",
+      description: "Only teachers can create quizzes.",
+      variant: "destructive",
+    })
+    router.push('/student/dashboard')
+    return null
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
 
     try {
+      console.log('Creating quiz for teacher:', user.name, user.email)
+      
       const response = await fetch('/api/quizzes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Include cookies for authentication
         body: JSON.stringify({ ...quizData, questions }),
       });
 
+      const data = await response.json()
+      console.log('Quiz creation response:', { status: response.status, data })
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create quiz');
+        throw new Error(data.message || 'Failed to create quiz');
       }
 
-      const createdQuiz = await response.json();
-
       toast({
-        title: "Quiz Created",
-        description: `Quiz "${createdQuiz.title}" created successfully with code ${createdQuiz.code}.`,
+        title: "Quiz Created Successfully!",
+        description: `Quiz "${data.title}" created with code ${data.code}.`,
       })
 
       router.push("/teacher/dashboard")

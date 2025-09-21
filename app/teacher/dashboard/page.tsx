@@ -5,56 +5,176 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TeacherLayout } from "@/components/layouts/teacher-layout"
 import { Badge } from "@/components/ui/badge"
-import { PlusCircle, Users, Clock, BarChart3, Copy } from "lucide-react"
+import { PlusCircle, Users, Clock, BarChart3, Copy, Play, Square } from "lucide-react"
 import Link from "next/link"
+import { useState, useEffect } from "react"
+import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/hooks/use-auth"
+import { useRouter } from "next/navigation"
 
-// Mock data for teacher dashboard
-const activeQuizzes = [
-  {
-    id: 1,
-    title: "Science Quiz: Chapter 5",
-    code: "SCI123",
-    participants: 24,
-    status: "active",
-    startTime: "2023-06-10T14:00:00",
-    endTime: "2023-06-10T15:00:00",
-  },
-  {
-    id: 2,
-    title: "Math Quiz: Algebra",
-    code: "MATH456",
-    participants: 18,
-    status: "scheduled",
-    startTime: "2023-06-15T10:00:00",
-    endTime: "2023-06-15T11:00:00",
-  },
-]
-
-const recentQuizzes = [
-  {
-    id: 101,
-    title: "History Quiz: Ancient Rome",
-    date: "2023-06-01",
-    participants: 22,
-    avgScore: 78,
-  },
-  {
-    id: 102,
-    title: "English Literature Quiz",
-    date: "2023-05-25",
-    participants: 20,
-    avgScore: 85,
-  },
-  {
-    id: 103,
-    title: "Geography Test: Continents",
-    date: "2023-05-20",
-    participants: 19,
-    avgScore: 72,
-  },
-]
+interface Quiz {
+  _id: string;
+  title: string;
+  description?: string;
+  code: string;
+  timeLimit: number;
+  status: 'draft' | 'scheduled' | 'active' | 'completed';
+  createdAt: string;
+  updatedAt: string;
+}
 
 export default function TeacherDashboard() {
+  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to access the teacher dashboard.",
+        variant: "destructive",
+      });
+      router.replace('/login');
+      return;
+    }
+
+    if (user.role !== 'teacher') {
+      toast({
+        title: "Access Denied",
+        description: "Only teachers can access this dashboard.",
+        variant: "destructive",
+      });
+      router.replace('/student/dashboard');
+      return;
+    }
+
+    fetchQuizzes();
+  }, [authLoading, user]);
+
+  // Check authentication
+  if (authLoading) {
+    return (
+      <TeacherLayout>
+        <div className="container py-10 text-center">
+          <p>Checking authentication...</p>
+        </div>
+      </TeacherLayout>
+    );
+  }
+
+  if (!user || user.role !== 'teacher') {
+    return (
+      <TeacherLayout>
+        <div className="container py-10 text-center">
+          <p>Redirecting...</p>
+        </div>
+      </TeacherLayout>
+    );
+  }
+
+  const fetchQuizzes = async () => {
+    try {
+      const response = await fetch('/api/quizzes/teacher', {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setQuizzes(data);
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch quizzes');
+      }
+    } catch (error) {
+      console.error('Error fetching quizzes:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to fetch quizzes",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleActivateQuiz = async (quizId: string) => {
+    try {
+      const response = await fetch(`/api/quizzes/${quizId}/activate`, {
+        method: 'PATCH',
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        toast({
+          title: "Quiz Activated",
+          description: "The quiz is now active and students can join.",
+        });
+        fetchQuizzes(); // Refresh the list
+      } else {
+        const data = await response.json();
+        toast({
+          title: "Error",
+          description: data.message || "Failed to activate quiz",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error activating quiz:', error);
+      toast({
+        title: "Error",
+        description: "Failed to activate quiz",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEndQuiz = async (quizId: string) => {
+    try {
+      const response = await fetch(`/api/quizzes/${quizId}/end`, {
+        method: 'PATCH',
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        toast({
+          title: "Quiz Ended",
+          description: "The quiz has been ended and is no longer accepting submissions.",
+        });
+        fetchQuizzes(); // Refresh the list
+      } else {
+        const data = await response.json();
+        toast({
+          title: "Error",
+          description: data.message || "Failed to end quiz",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error ending quiz:', error);
+      toast({
+        title: "Error",
+        description: "Failed to end quiz",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const copyQuizCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    toast({
+      title: "Code Copied",
+      description: `Quiz code ${code} copied to clipboard`,
+    });
+  };
+
+  const activeQuizzes = quizzes.filter(quiz => quiz.status === 'active');
+  const draftQuizzes = quizzes.filter(quiz => quiz.status === 'draft');
+  const completedQuizzes = quizzes.filter(quiz => quiz.status === 'completed');
+
   return (
     <TeacherLayout>
       <div className="space-y-6">
@@ -127,12 +247,19 @@ export default function TeacherDashboard() {
 
         <Tabs defaultValue="active" className="space-y-4">
           <TabsList>
-            <TabsTrigger value="active">Active Quizzes</TabsTrigger>
-            <TabsTrigger value="recent">Recent Quizzes</TabsTrigger>
+            <TabsTrigger value="active">Active Quizzes ({activeQuizzes.length})</TabsTrigger>
+            <TabsTrigger value="draft">Draft Quizzes ({draftQuizzes.length})</TabsTrigger>
+            <TabsTrigger value="completed">Completed Quizzes ({completedQuizzes.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="active" className="space-y-4">
-            {activeQuizzes.length === 0 ? (
+            {loading ? (
+              <Card>
+                <CardContent className="py-8 text-center">
+                  <p className="text-muted-foreground">Loading quizzes...</p>
+                </CardContent>
+              </Card>
+            ) : activeQuizzes.length === 0 ? (
               <Card>
                 <CardContent className="py-8 text-center">
                   <p className="text-muted-foreground">No active quizzes at the moment.</p>
@@ -140,49 +267,107 @@ export default function TeacherDashboard() {
               </Card>
             ) : (
               activeQuizzes.map((quiz) => (
-                <Card key={quiz.id}>
+                <Card key={quiz._id}>
                   <CardHeader className="pb-2">
                     <div className="flex justify-between items-start">
                       <div>
                         <CardTitle>{quiz.title}</CardTitle>
                         <CardDescription>Code: {quiz.code}</CardDescription>
                       </div>
-                      <Badge variant={quiz.status === "active" ? "default" : "outline"}>
-                        {quiz.status === "active" ? "Active" : "Scheduled"}
-                      </Badge>
+                      <Badge variant="default">Active</Badge>
                     </div>
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center text-sm text-muted-foreground">
-                        <Users className="mr-1 h-4 w-4" />
-                        <span>{quiz.participants} participants</span>
+                        <Clock className="mr-1 h-4 w-4" />
+                        <span>Time Limit: {quiz.timeLimit} minutes</span>
                       </div>
                       <div className="flex items-center text-sm text-muted-foreground">
-                        <Clock className="mr-1 h-4 w-4" />
-                        <span>
-                          {new Date(quiz.startTime).toLocaleTimeString("en-US", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                          {" - "}
-                          {new Date(quiz.endTime).toLocaleTimeString("en-US", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
+                        <span>Started: {new Date(quiz.updatedAt).toLocaleString()}</span>
                       </div>
                     </div>
                   </CardContent>
                   <CardFooter className="flex justify-between">
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => copyQuizCode(quiz.code)}
+                    >
                       <Copy className="mr-2 h-4 w-4" />
                       Copy Code
                     </Button>
-                    <Button asChild>
-                      <Link href={`/teacher/quizzes/${quiz.id}/monitor`}>
-                        {quiz.status === "active" ? "Monitor" : "View"}
-                      </Link>
+                    <div className="flex gap-2">
+                      <Button asChild>
+                        <Link href={`/teacher/quizzes/${quiz._id}/monitor`}>
+                          Monitor
+                        </Link>
+                      </Button>
+                      <Button 
+                        variant="destructive" 
+                        size="sm"
+                        onClick={() => handleEndQuiz(quiz._id)}
+                      >
+                        <Square className="mr-2 h-4 w-4" />
+                        End Quiz
+                      </Button>
+                    </div>
+                  </CardFooter>
+                </Card>
+              ))
+            )}
+          </TabsContent>
+
+          <TabsContent value="draft" className="space-y-4">
+            {loading ? (
+              <Card>
+                <CardContent className="py-8 text-center">
+                  <p className="text-muted-foreground">Loading quizzes...</p>
+                </CardContent>
+              </Card>
+            ) : draftQuizzes.length === 0 ? (
+              <Card>
+                <CardContent className="py-8 text-center">
+                  <p className="text-muted-foreground">No draft quizzes.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              draftQuizzes.map((quiz) => (
+                <Card key={quiz._id}>
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle>{quiz.title}</CardTitle>
+                        <CardDescription>Code: {quiz.code}</CardDescription>
+                      </div>
+                      <Badge variant="outline">Draft</Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <Clock className="mr-1 h-4 w-4" />
+                        <span>Time Limit: {quiz.timeLimit} minutes</span>
+                      </div>
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <span>Created: {new Date(quiz.createdAt).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter className="flex justify-between">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => copyQuizCode(quiz.code)}
+                    >
+                      <Copy className="mr-2 h-4 w-4" />
+                      Copy Code
+                    </Button>
+                    <Button 
+                      onClick={() => handleActivateQuiz(quiz._id)}
+                    >
+                      <Play className="mr-2 h-4 w-4" />
+                      Activate Quiz
                     </Button>
                   </CardFooter>
                 </Card>
@@ -190,43 +375,45 @@ export default function TeacherDashboard() {
             )}
           </TabsContent>
 
-          <TabsContent value="recent" className="space-y-4">
-            {recentQuizzes.length === 0 ? (
+          <TabsContent value="completed" className="space-y-4">
+            {loading ? (
               <Card>
                 <CardContent className="py-8 text-center">
-                  <p className="text-muted-foreground">No recent quizzes.</p>
+                  <p className="text-muted-foreground">Loading quizzes...</p>
+                </CardContent>
+              </Card>
+            ) : completedQuizzes.length === 0 ? (
+              <Card>
+                <CardContent className="py-8 text-center">
+                  <p className="text-muted-foreground">No completed quizzes.</p>
                 </CardContent>
               </Card>
             ) : (
-              recentQuizzes.map((quiz) => (
-                <Card key={quiz.id}>
+              completedQuizzes.map((quiz) => (
+                <Card key={quiz._id}>
                   <CardHeader className="pb-2">
                     <div className="flex justify-between items-start">
                       <CardTitle>{quiz.title}</CardTitle>
-                      <Badge variant="outline">Completed</Badge>
+                      <Badge variant="secondary">Completed</Badge>
                     </div>
                     <CardDescription>
-                      {new Date(quiz.date).toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
+                      Code: {quiz.code}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center text-sm text-muted-foreground">
-                        <Users className="mr-1 h-4 w-4" />
-                        <span>{quiz.participants} participants</span>
+                        <Clock className="mr-1 h-4 w-4" />
+                        <span>Time Limit: {quiz.timeLimit} minutes</span>
                       </div>
-                      <div className="flex items-center text-sm">
-                        <span className="font-medium">Avg. Score: {quiz.avgScore}%</span>
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <span>Completed: {new Date(quiz.updatedAt).toLocaleString()}</span>
                       </div>
                     </div>
                   </CardContent>
                   <CardFooter>
                     <Button className="w-full" variant="outline" asChild>
-                      <Link href={`/teacher/quizzes/${quiz.id}/results`}>View Results</Link>
+                      <Link href={`/teacher/quizzes/${quiz._id}/results`}>View Results</Link>
                     </Button>
                   </CardFooter>
                 </Card>

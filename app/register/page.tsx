@@ -10,7 +10,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import Link from "next/link"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -32,35 +32,123 @@ export default function Register() {
     setFormData((prev) => ({ ...prev, role: value }))
   }
 
+  const generateUniqueEmail = () => {
+    const timestamp = Date.now()
+    const randomNum = Math.floor(Math.random() * 1000)
+    setFormData((prev) => ({ ...prev, email: `user${timestamp}${randomNum}@example.com` }))
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
 
+    // Client-side validation with detailed feedback
+    if (!formData.name || formData.name.length < 2) {
+      toast({
+        title: "Invalid Name",
+        description: "Name must be at least 2 characters long. Please enter your full name.",
+        variant: "destructive",
+      })
+      setIsLoading(false)
+      return
+    }
+
+    if (!formData.email || !/^\S+@\S+\.\S+$/.test(formData.email)) {
+      toast({
+        title: "Invalid Email Format",
+        description: "Please enter a valid email address (e.g., john@example.com)",
+        variant: "destructive",
+      })
+      setIsLoading(false)
+      return
+    }
+
+    if (!formData.password || formData.password.length < 6) {
+      toast({
+        title: "Weak Password",
+        description: "Password must be at least 6 characters long for security.",
+        variant: "destructive",
+      })
+      setIsLoading(false)
+      return
+    }
+
+    if (!formData.role || !['teacher', 'student'].includes(formData.role)) {
+      toast({
+        title: "Role Required",
+        description: "Please select whether you are a teacher or student.",
+        variant: "destructive",
+      })
+      setIsLoading(false)
+      return
+    }
+
     try {
+      console.log('Submitting registration with data:', formData)
+      
+      toast({
+        title: "Creating Account",
+        description: `Creating ${formData.role} account for ${formData.name}...`,
+      })
+      
+      const payload = {
+        name: formData.name.trim(),
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+        role: formData.role,
+      }
+
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        credentials: 'include',
+        body: JSON.stringify(payload),
       })
 
-      const data = await response.json()
+      let data: any = {}
+      try {
+        data = await response.json()
+      } catch (e) {
+        // Non-JSON response (e.g., HTML error)
+      }
+      console.log('Registration response:', { status: response.status, data })
 
       if (!response.ok) {
-        throw new Error(data.error || 'Registration failed')
+        const errorMessage = data.details ? data.details.join(', ') : data.message || data.error || 'Registration failed'
+        console.error('Registration failed:', errorMessage)
+        
+        toast({
+          title: "Registration Failed",
+          description: errorMessage,
+          variant: "destructive",
+        })
+        return
       }
 
-      // Redirect based on role
-      if (formData.role === "teacher") {
-        router.push("/teacher/dashboard")
-      } else {
-        router.push("/student/dashboard")
-      }
-    } catch (error) {
+      // Success - show detailed success message
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Registration failed",
+        title: "Account Created Successfully!",
+        description: `Welcome ${data.user.name}! Your ${data.user.role} account is ready. Redirecting to dashboard...`,
+      })
+
+      console.log('Registration successful for:', data.user.name, 'Role:', data.user.role)
+
+      // Small delay to show success message before redirect
+      setTimeout(() => {
+        if (data?.user?.role === "teacher") {
+          router.push("/teacher/dashboard")
+        } else {
+          router.push("/student/dashboard")
+        }
+      }, 2000)
+
+    } catch (error) {
+      console.error('Registration error:', error)
+      toast({
+        title: "Connection Error",
+        description: "Network error or unexpected error occurred. Please check your connection and try again.",
         variant: "destructive",
       })
     } finally {
@@ -82,6 +170,7 @@ export default function Register() {
               <Input
                 id="name"
                 name="name"
+                type="text"
                 placeholder="John Doe"
                 required
                 value={formData.name}
@@ -90,15 +179,25 @@ export default function Register() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="john@example.com"
-                required
-                value={formData.email}
-                onChange={handleChange}
-              />
+              <div className="flex gap-2">
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="john@example.com"
+                  required
+                  value={formData.email}
+                  onChange={handleChange}
+                />
+                {/* <Button
+                  type="button"
+                  variant="outline"
+                  onClick={generateUniqueEmail}
+                  className="whitespace-nowrap"
+                >
+                  Generate
+                </Button> */}
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>

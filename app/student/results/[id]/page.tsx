@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { StudentLayout } from "@/components/layouts/student-layout"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/hooks/use-auth"
 import { use } from 'react'
 
 interface QuizResult {
@@ -29,10 +30,24 @@ export default function QuizResults({ params }: { params: Promise<{ id: string }
   const resolvedParams = use(params)
   const router = useRouter()
   const { toast } = useToast()
+  const { user, loading: authLoading } = useAuth()
   const [result, setResult] = useState<QuizResult | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
+    // Guard: only students can view their results
+    if (authLoading) return
+    if (!user) {
+      toast({ title: "Authentication Required", description: "Please log in to view results.", variant: "destructive" })
+      router.replace('/login')
+      return
+    }
+    if (user.role !== 'student') {
+      toast({ title: "Access Denied", description: "Only students can view this page.", variant: "destructive" })
+      router.replace('/teacher/dashboard')
+      return
+    }
+
     const fetchResult = async () => {
       try {
         setIsLoading(true)
@@ -96,7 +111,7 @@ export default function QuizResults({ params }: { params: Promise<{ id: string }
     }
 
     fetchResult()
-  }, [resolvedParams.id, router, toast])
+  }, [resolvedParams.id, router, toast, user, authLoading])
 
   if (isLoading) {
     return (

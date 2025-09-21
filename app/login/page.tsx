@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 
 export default function Login() {
   const [formData, setFormData] = useState({
@@ -33,30 +33,97 @@ export default function Login() {
     setIsLoading(true)
     setError("")
 
+    // Client-side validation
+    if (!formData.email || !formData.password) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      })
+      setIsLoading(false)
+      return
+    }
+
+    if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
+      toast({
+        title: "Invalid Email",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      })
+      setIsLoading(false)
+      return
+    }
+
     try {
+      toast({
+        title: "Logging In",
+        description: "Please wait while we authenticate your credentials...",
+      })
+
+      console.log('Attempting login for:', formData.email)
+      
+      const payload = {
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+      }
+
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        credentials: 'include',
+        body: JSON.stringify(payload),
       })
 
-      const data = await response.json()
+      let data: any = {}
+      try {
+        data = await response.json()
+      } catch (e) {
+        // Non-JSON response (e.g., HTML error) – keep data as empty object
+      }
+      console.log('Login response:', { status: response.status, user: data.user?.name, role: data.user?.role })
 
       if (!response.ok) {
-        setError(data.error || 'Login failed')
+        const errorMessage = data.message || data.error || 'Login failed'
+        console.error('Login failed:', errorMessage)
+        
+        toast({
+          title: "Login Failed",
+          description: errorMessage,
+          variant: "destructive",
+        })
+        setError(errorMessage)
         return
       }
 
-      // Redirect based on user role
-      if (data.user.role === 'teacher') {
-        router.push('/teacher/dashboard')
-      } else {
-        router.push('/student/dashboard')
-      }
+      // Success - show user info and redirect
+      toast({
+        title: "Login Successful!",
+        description: `Welcome back, ${data.user.name}! Redirecting to ${data.user.role} dashboard...`,
+      })
+
+      console.log('Login successful for:', data.user.name, 'Role:', data.user.role)
+
+      // Small delay to show success message before redirect
+      setTimeout(() => {
+        if (data.user.role === 'teacher') {
+          router.push('/teacher/dashboard')
+        } else {
+          router.push('/student/dashboard')
+        }
+      }, 1500)
+
     } catch (error) {
-      setError("An unexpected error occurred. Please try again.")
+      console.error('Login error:', error)
+      const errorMessage = "Network error or unexpected error occurred. Please check your connection and try again."
+      
+      toast({
+        title: "Connection Error",
+        description: errorMessage,
+        variant: "destructive",
+      })
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }

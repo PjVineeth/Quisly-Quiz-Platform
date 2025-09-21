@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { Clock } from "lucide-react"
 import { use } from 'react'
+import { useAuth } from "@/hooks/use-auth"
 
 interface Question {
   id: string
@@ -30,34 +31,151 @@ export default function TakeQuiz({ params }: { params: Promise<{ id: string }> }
   const resolvedParams = use(params)
   const router = useRouter()
   const { toast } = useToast()
+  const { user, loading: authLoading } = useAuth()
   const [quizData, setQuizData] = useState<QuizData | null>(null)
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [timeLeft, setTimeLeft] = useState<number | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  const [studentName, setStudentName] = useState("")
 
-  useEffect(() => {
-    const fetchQuiz = async () => {
-      try {
-        const response = await fetch(`/api/quizzes/${resolvedParams.id}`);
-        if (!response.ok) {
-          throw new Error('Failed to load quiz');
-        }
+  const joinQuizSession = async (quizCode: string) => {
+    try {
+      const response = await fetch('/api/quiz-sessions/join', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          quizCode
+        }),
+      });
+
+      if (response.ok) {
         const data = await response.json();
-        setQuizData(data);
-        setTimeLeft(data.timeLimit * 60); // Convert minutes to seconds
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to load quiz. Please try again.",
-          variant: "destructive",
-        });
-        router.push('/student/join');
+        setSessionId(data.sessionId);
+        return data.quiz;
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to join quiz session');
       }
-    };
+    } catch (error) {
+      console.error('Error joining quiz session:', error);
+      throw error;
+    }
+  };
 
-    fetchQuiz();
-  }, [resolvedParams.id, router, toast]);
+  const updateSession = async (currentQ: number, answers: Record<string, string>, status?: string, score?: number, timeSpent?: number) => {
+    if (!sessionId) return;
+
+    try {
+      await fetch('/api/quiz-sessions/update', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionId,
+          currentQuestion: currentQ,
+          answers,
+          status,
+          score,
+          timeSpent
+        }),
+      });
+    } catch (error) {
+      console.error('Error updating session:', error);
+    }
+  };
+
+  // Check authentication
+  useEffect(() => {
+    if (authLoading) return; // Still loading
+    
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to take the quiz.",
+        variant: "destructive",
+      });
+      router.push('/login');
+      return;
+    }
+    
+    if (user.role !== 'student') {
+      toast({
+        title: "Access Denied",
+        description: "Only students can take quizzes.",
+        variant: "destructive",
+      });
+      router.replace('/teacher/dashboard');
+      return;
+    }
+  }, [user, authLoading, router, toast]);
+
+  const fetchQuiz = async () => {
+    try {
+      // Check if it's the demo quiz first
+      if (resolvedParams.id === "DEMO123") {
+        const demoQuiz = {
+          id: "DEMO123",
+          title: "Demo Science Quiz",
+          timeLimit: 10,
+          questions: [
+            {
+              id: "q1",
+              type: "multiple-choice" as const,
+              text: "What is the chemical symbol for Oxygen?",
+              options: ["O", "Ox", "O2", "Oxygen"]
+            },
+            {
+              id: "q2",
+              type: "true-false" as const,
+              text: "The Earth revolves around the Sun.",
+              options: ["True", "False"]
+            },
+            {
+              id: "q3",
+              type: "numerical" as const,
+              text: "What is the atomic number of Oxygen?",
+              options: []
+            },
+            {
+              id: "q4",
+              type: "short-answer" as const,
+              text: "What process do plants use to make their own food?",
+              options: []
+            }
+          ]
+        };
+        setQuizData(demoQuiz);
+        setTimeLeft(demoQuiz.timeLimit * 60);
+        return;
+      }
+
+      // For real quizzes, join session and get quiz data
+      const data = await joinQuizSession(resolvedParams.id);
+      setQuizData(data);
+      setTimeLeft(data.timeLimit * 60); // Convert minutes to seconds
+    } catch (error) {
+      console.error('Error fetching quiz:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to load quiz. Please try again.",
+        variant: "destructive",
+      });
+      router.push('/student/join');
+    }
+  };
+
+  // Fetch quiz when component mounts and user is authenticated
+  useEffect(() => {
+    // Only fetch quiz if user is authenticated
+    if (user && user.role === 'student') {
+      fetchQuiz();
+    }
+  }, [resolvedParams.id, router, toast, user]);
 
   // Timer effect
   useEffect(() => {
@@ -78,10 +196,14 @@ export default function TakeQuiz({ params }: { params: Promise<{ id: string }> }
   }, [timeLeft]);
 
   const handleAnswer = (questionId: string, answer: string) => {
-    setAnswers(prev => ({
-      ...prev,
+    const newAnswers = {
+      ...answers,
       [questionId]: answer
-    }));
+    };
+    setAnswers(newAnswers);
+    
+    // Update session with new answers
+    updateSession(currentQuestion, newAnswers);
   };
 
   const handleSubmit = async () => {
@@ -185,17 +307,30 @@ export default function TakeQuiz({ params }: { params: Promise<{ id: string }> }
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          quizId: quizData.id,
+          quizCode: resolvedParams.id,
           answers,
           timeSpent: quizData.timeLimit * 60 - (timeLeft || 0)
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to submit quiz');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to submit quiz');
       }
 
       const result = await response.json();
+      
+      // Update session as completed
+      if (sessionId) {
+        await updateSession(
+          currentQuestion, 
+          answers, 
+          'completed', 
+          result.score, 
+          quizData.timeLimit * 60 - (timeLeft || 0)
+        );
+      }
+      
       router.push(`/student/results/${result.attemptId}`);
     } catch (error) {
       console.error('Error submitting quiz:', error);
@@ -209,6 +344,22 @@ export default function TakeQuiz({ params }: { params: Promise<{ id: string }> }
     }
   };
 
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <StudentLayout>
+        <div className="container py-10">
+          <Card>
+            <CardContent className="py-10">
+              <p className="text-center">Checking authentication...</p>
+            </CardContent>
+          </Card>
+        </div>
+      </StudentLayout>
+    );
+  }
+
+  // Show loading while fetching quiz data
   if (!quizData) {
     return (
       <StudentLayout>
@@ -280,14 +431,22 @@ export default function TakeQuiz({ params }: { params: Promise<{ id: string }> }
           <CardFooter className="flex justify-between">
             <Button
               variant="outline"
-              onClick={() => setCurrentQuestion(prev => prev - 1)}
+              onClick={() => {
+                const newQuestion = currentQuestion - 1;
+                setCurrentQuestion(newQuestion);
+                updateSession(newQuestion, answers);
+              }}
               disabled={currentQuestion === 0}
             >
               Previous
             </Button>
             {currentQuestion < quizData.questions.length - 1 ? (
               <Button
-                onClick={() => setCurrentQuestion(prev => prev + 1)}
+                onClick={() => {
+                  const newQuestion = currentQuestion + 1;
+                  setCurrentQuestion(newQuestion);
+                  updateSession(newQuestion, answers);
+                }}
                 disabled={!answers[currentQ.id]}
               >
                 Next

@@ -7,12 +7,45 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { StudentLayout } from "@/components/layouts/student-layout"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/hooks/use-auth"
 
 export default function JoinQuiz() {
   const router = useRouter()
   const { toast } = useToast()
+  const { user, loading: authLoading } = useAuth()
   const [quizCode, setQuizCode] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+
+  // Guard: only students here
+  if (authLoading) {
+    return (
+      <StudentLayout>
+        <div className="container max-w-md py-10">
+          <p className="text-center">Checking authentication...</p>
+        </div>
+      </StudentLayout>
+    )
+  }
+
+  if (!user) {
+    toast({
+      title: "Authentication Required",
+      description: "Please log in to join a quiz.",
+      variant: "destructive",
+    })
+    router.replace('/login')
+    return null
+  }
+
+  if (user.role !== 'student') {
+    toast({
+      title: "Access Denied",
+      description: "Only students can join quizzes.",
+      variant: "destructive",
+    })
+    router.replace('/teacher/dashboard')
+    return null
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
