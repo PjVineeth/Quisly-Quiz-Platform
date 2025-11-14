@@ -4,11 +4,16 @@ import User from '@/lib/models/User';
 import bcrypt from 'bcryptjs';
 import { SignJWT } from 'jose';
 
+const resolvedJwtSecret = process.env.JWT_SECRET;
+const secretString = resolvedJwtSecret ?? 'your-secret-key';
+const secret = new TextEncoder().encode(secretString);
+
 export async function POST(req: Request) {
   try {
     const { email, password } = await req.json();
 
     // Validate required fields
+    if (!email || !password) {
       return NextResponse.json(
         { error: 'Email and password are required' },
         { status: 400 }
@@ -17,6 +22,7 @@ export async function POST(req: Request) {
 
     // Validate email format
     const emailRegex = /^\S+@\S+\.\S+$/;
+    if (!emailRegex.test(email)) {
       return NextResponse.json(
         { error: 'Please enter a valid email address' },
         { status: 400 }
@@ -26,8 +32,8 @@ export async function POST(req: Request) {
     // Connect to database
     await connectDB();
 
-
     // Find user
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user) {
       return NextResponse.json(
         { error: 'No account found with this email address. Please check your email or register for a new account.' },
@@ -50,6 +56,15 @@ export async function POST(req: Request) {
     console.log('Password verified for user:', user.name);
 
     // Create JWT token
+    const token = await new SignJWT({ 
+      userId: user._id, 
+      email: user.email, 
+      name: user.name,
+      role: user.role 
+    })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setExpirationTime('24h')
+      .sign(secret);
 
     console.log('JWT token created for user:', user.name);
 
@@ -84,4 +99,4 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
-} 
+}
