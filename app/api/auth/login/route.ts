@@ -4,6 +4,10 @@ import User from '@/lib/models/User';
 import bcrypt from 'bcryptjs';
 import { SignJWT } from 'jose';
 
+const resolvedJwtSecret = process.env.JWT_SECRET;
+const secretString = resolvedJwtSecret ?? 'your-secret-key';
+const secret = new TextEncoder().encode(secretString);
+
 export async function POST(req: Request) {
   try {
     const { email, password } = await req.json();
@@ -28,12 +32,9 @@ export async function POST(req: Request) {
     // Connect to database
     await connectDB();
 
-    console.log('Login attempt for email:', email);
-
     // Find user
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user) {
-      console.log('User not found for email:', email);
       return NextResponse.json(
         { error: 'No account found with this email address. Please check your email or register for a new account.' },
         { status: 401 }
@@ -55,9 +56,8 @@ export async function POST(req: Request) {
     console.log('Password verified for user:', user.name);
 
     // Create JWT token
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key');
     const token = await new SignJWT({ 
-      userId: user._id.toString(), 
+      userId: user._id, 
       email: user.email, 
       name: user.name,
       role: user.role 
@@ -99,4 +99,4 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
-} 
+}
