@@ -61,7 +61,7 @@ const QuizSessionSchema = new Schema({
   answers: {
     type: Map,
     of: String,
-    default: () => new Map()
+    default: new Map()
   },
   startTime: {
     type: Date,

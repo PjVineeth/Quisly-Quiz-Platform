@@ -7,8 +7,7 @@ const resolvedJwtSecret = process.env.JWT_SECRET;
 if (!resolvedJwtSecret) {
   console.warn('[auth] JWT_SECRET is not set. Set it in your environment for security.');
 }
-const secretString = resolvedJwtSecret ?? 'your-secret-key';
-const secret = new TextEncoder().encode(secretString);
+const secret = new TextEncoder().encode(resolvedJwtSecret ?? '');
 
 export async function createToken(user: any) {
   return await new SignJWT({ 

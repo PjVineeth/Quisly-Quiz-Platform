@@ -16,13 +16,8 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Update session data
-    if (typeof currentQuestion === 'number') {
-      session.currentQuestion = currentQuestion;
-    }
-    const totalQuestions = session.totalQuestions || 0;
-    session.progress = totalQuestions > 0
-      ? Math.round((session.currentQuestion / totalQuestions) * 100)
-      : 0;
+    session.currentQuestion = currentQuestion || session.currentQuestion;
+    session.progress = Math.round((session.currentQuestion / session.totalQuestions) * 100);
     session.lastActivity = new Date();
 
     if (answers) {
@@ -33,8 +28,8 @@ export async function PATCH(req: NextRequest) {
       session.status = status;
       if (status === 'completed') {
         session.completedAt = new Date();
-        session.score = typeof score === 'number' ? score : null;
-        session.timeSpent = typeof timeSpent === 'number' ? timeSpent : null;
+        session.score = score || null;
+        session.timeSpent = timeSpent || null;
       }
     }
 

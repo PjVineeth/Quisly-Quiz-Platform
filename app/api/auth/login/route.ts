@@ -9,6 +9,7 @@ export async function POST(req: Request) {
     const { email, password } = await req.json();
 
     // Validate required fields
+    if (!email || !password) {
       return NextResponse.json(
         { error: 'Email and password are required' },
         { status: 400 }
@@ -17,6 +18,7 @@ export async function POST(req: Request) {
 
     // Validate email format
     const emailRegex = /^\S+@\S+\.\S+$/;
+    if (!emailRegex.test(email)) {
       return NextResponse.json(
         { error: 'Please enter a valid email address' },
         { status: 400 }
@@ -26,9 +28,12 @@ export async function POST(req: Request) {
     // Connect to database
     await connectDB();
 
+    console.log('Login attempt for email:', email);
 
     // Find user
+    const user = await User.findOne({ email });
     if (!user) {
+      console.log('User not found for email:', email);
       return NextResponse.json(
         { error: 'No account found with this email address. Please check your email or register for a new account.' },
         { status: 401 }
@@ -50,6 +55,16 @@ export async function POST(req: Request) {
     console.log('Password verified for user:', user.name);
 
     // Create JWT token
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key');
+    const token = await new SignJWT({ 
+      userId: user._id.toString(), 
+      email: user.email, 
+      name: user.name,
+      role: user.role 
+    })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setExpirationTime('24h')
+      .sign(secret);
 
     console.log('JWT token created for user:', user.name);
 
