@@ -12,9 +12,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const userId =
+      typeof user._id === 'string'
+        ? user._id
+        : user._id?.toString?.() ?? '';
+
     return NextResponse.json({
       user: {
-        id: user._id,
+        _id: userId,
+        id: userId,
         name: user.name,
         email: user.email,
         role: user.role

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import bcrypt from 'bcryptjs';
-import { SignJWT } from 'jose';
+import { createToken } from '@/lib/auth';
 
 export async function POST(req: Request) {
   try {
@@ -55,16 +55,7 @@ export async function POST(req: Request) {
     console.log('Password verified for user:', user.name);
 
     // Create JWT token
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key');
-    const token = await new SignJWT({ 
-      userId: user._id.toString(), 
-      email: user.email, 
-      name: user.name,
-      role: user.role 
-    })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setExpirationTime('24h')
-      .sign(secret);
+    const token = await createToken(user);
 
     console.log('JWT token created for user:', user.name);
 
